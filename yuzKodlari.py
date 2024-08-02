@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QApplication, QMessageBox, QDialog, QFormLayout, QLineEdit, QPushButton, QLabel
-from PyQt5.QtCore import Qt
+from PyQt6.QtWidgets import QApplication, QMessageBox, QDialog, QFormLayout, QLineEdit, QPushButton, QLabel
+from PyQt6.QtCore import Qt
 import cv2
 import face_recognition
 import sqlite3
@@ -76,9 +76,11 @@ class LoginPage(QDialog):
         self.setLayout(layout)
 
     def login(self):
-        cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        cap = cv2.VideoCapture(0)
+
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 640)
+
         prev_frame_time = 0
         new_frame_time = 0
         
@@ -118,59 +120,34 @@ class LoginPage(QDialog):
             YORUM SATIRI İLE YUKARI KOD PARÇASI FARKLARI GÖRÜNMEKTEDİR.
             
             '''
-            # if face_locations:
-            #     encoding = face_recognition.face_encodings(frame)[0]
-            #     print(landmarks)
-            #     name = self.get_face_data_from_db(encoding,landmarks)
-            #     print(f"NAME TYPE : {type(name)}")
-            #     if name:
-            #         for face_location in face_locations:
-            #             top, right, bottom, left = face_location
-            #             cv2.putText(frame, name, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 200), 2)
-            #             cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-            #     else:
-            #         pass
-            # else:
-            #     print("Yuz bulunamadi")
-            # cv2.putText(frame, fps, (7, 70), font, 3, (100, 255, 0), 3, cv2.LINE_AA)
-            # cv2.imshow("Giris Yap", frame)
+            
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         cap.release()
         cv2.destroyAllWindows()
 
-    # Koordinatların mesafesini hesaplama fonksiyonu
     def calculate_chin_distance(self,chin1, chin2):
         chin1 = np.array(chin1)
         chin2 = np.array(chin2)
-        # Koordinatların aynı sıraya sahip olduğunu varsayar
         return np.sqrt(np.sum((chin1 - chin2) ** 2))
-    # def calculate_eyebrow_distance(self,eyebrow1, eyebrow2):
-    #     eyebrow1 = np.array(eyebrow1)
-    #     eyebrow2 = np.array(eyebrow2)
-    #     # Koordinatların aynı sıraya sahip olduğunu varsayar
-        return np.sqrt(np.sum((eyebrow1 - eyebrow2) ** 2))
     def calculate_left_eye_distance(self,eyeleft1,eyeleft2):
         eyeleft1 = np.array(eyeleft1)
         eyeleft2 = np.array(eyeleft2)
-        # Koordinatların aynı sıraya sahip olduğunu varsayar
         return np.sqrt(np.sum((eyeleft1 - eyeleft2) ** 2))
     def calculate_right_eye_distance(self,eyeright1, eyeright2):
         eyeright1 = np.array(eyeright1)
         eyeright2 = np.array(eyeright2)
-        # Koordinatların aynı sıraya sahip olduğunu varsayar
         return np.sqrt(np.sum((eyeright1 - eyeright2) ** 2))
     def calculate_top_lib_distance(self,toplip1,toplip2):
         toplip1 = np.array(toplip1)
         toplip2 = np.array(toplip2)
-        return np.sqrt(np.sum((toplip1-toplip2)))
+        return np.sqrt(np.sum((toplip1-toplip2) **2 ))
     def calculate_bottom_lib_distance(self,bottomlip1,bottomlip2):
         bottomlip1 = np.array(bottomlip1)
         bottomlip2 = np.array(bottomlip2)
-        return np.sqrt(np.sum((bottomlip1-bottomlip2)))
+        return np.sqrt(np.sum((bottomlip1-bottomlip2)   **2 ))
 
-    # Veritabanından chin verisini JSON formatında çözme
     def parse_chin_data(self,chin_blob):
         return json.loads(chin_blob)
     def parse_left_eye(self,eye_left):
@@ -182,7 +159,6 @@ class LoginPage(QDialog):
     def parse_bottom_lib(self,bottom_lib):
         return json.loads(bottom_lib)
 
-    # Veritabanından yüz verilerini alma ve karşılaştırma
     def get_face_data_from_db(self,encoding, landmarks):
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
@@ -219,7 +195,6 @@ class LoginPage(QDialog):
             top_lib_coordinates = self.parse_top_lib(topLibBlob)
             bottom_lib_coordinates = self.parse_bottom_lib(bottomLibBlob)
 
-            # if landmarks and 'chin'  and 'left_eye' and 'right_eye' in landmarks[0] :
             '''
             YAPILAN DEGİSİKLİKLER 
             1- HER BİR LANDMARKS VE ENCODING DEGERİ  İÇİN LANDMARKS[0] KALDIRILDI
@@ -227,31 +202,32 @@ class LoginPage(QDialog):
             '''
         
 
-            if 'chin' in landmarks and 'left_eye' in landmarks and 'right_eye' in landmarks and 'top_lip' in landmarks and 'bottom_lip' in landmarks :
+            if 'chin' in landmarks and 'left_eye' in landmarks and 'right_eye' in landmarks or 'top_lip' in landmarks or 'bottom_lip' in landmarks :
                 chin_distance = self.calculate_chin_distance(chin_coordinates, landmarks['chin'])
                 left_eye_distance = self.calculate_left_eye_distance(left_eye_coordinates,landmarks['left_eye'])
                 right_eye_distance = self.calculate_right_eye_distance(right_eye_coordinates,landmarks['right_eye'])
                 top_lib_distance = self.calculate_top_lib_distance(top_lib_coordinates,landmarks['top_lip'])
                 bottom_lib_distance = self.calculate_bottom_lib_distance(bottom_lib_coordinates,landmarks['bottom_lip'])
+                print(f"User Name : {user_id}")
                 print(f"Chin Distance : {chin_distance}")
                 print(f"Left Eye Distance : {left_eye_distance}")
                 print(f"Right Eye Distance : {right_eye_distance}")
                 print(f"top lib Distance : {top_lib_distance}")
                 print(f"bottom lib Distance : {bottom_lib_distance}")
-
+                print("---------------------")
                 if encoding_match[0] and chin_distance < min_chin_distance and left_eye_distance < min_left_eye_distance and right_eye_distance < min_right_eye_distance and top_lib_distance < min_top_lip_distance and bottom_lib_distance < min_bottom_lip_distance:
-                    best_match_user_id = user_id
                     min_chin_distance = chin_distance
                     min_left_eye_distance = left_eye_distance
                     min_right_eye_distance = right_eye_distance
                     min_top_lip_distance = top_lib_distance
                     min_bottom_lip_distance = bottom_lib_distance
+                    best_match_user_id = user_id
         return best_match_user_id
                 
 
     def Register(self):
         register = Register()
-        register.exec_()
+        register.exec()
 
 class Register(QDialog):
     def __init__(self):
@@ -277,7 +253,7 @@ class Register(QDialog):
             QMessageBox.warning(self, "Error", "UserName is required!")
             return
 
-        camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        camera = cv2.VideoCapture(0)
         if not camera.isOpened():
             QMessageBox.warning(self, "Error", "Kamera Kullanılamıyor")
             return
@@ -301,70 +277,14 @@ class Register(QDialog):
                             break
                         else:
                             QMessageBox.warning(self,"Error","Fotograf Encodlanamadi")
-                    # image = cv2.imread(path)
-                        # encoding = encode_faces(image)
-                        # if encoding is not None:
-                        #     print("Encoding başarılı")
-                        #     print("Veri tabanına kaydedildi")
-                        #     save_encoding_to_db(username, encoding)
-                        # else:
-                        #     print("Fotograf Encodlanamadı")
             cv2.destroyWindow('Kamera')
             print(f"{angle} açıdan fotoğraf çekildi.")
-
-            # image = cv2.imread(path)
-            # encoding = encode_faces(image)
-            # if encoding is not None:
-            #     print("Encoding başarılı")
-            #     print("Veri tabanına kaydedildi")
-            #     save_encoding_to_db(username, encoding)
-            # else:
-            #     print("Fotograf Encodlanamadı")
-
+            
         camera.release()
         cv2.destroyAllWindows()
-
-        # Fotoğrafları işleyip veritabanına kaydet
-        # for path in photo_paths:
-        #     print(f"Processing {path}...")
-        #     image = cv2.imread(path)
-        #     print(f"İmage Size : {image.size}")
-        #     encoding = encode_faces(image)
-        #     if encoding is not None:
-        #         print("Encoding başarılı")
-        #         print("Veri tabanına kaydedildi")
-        #         save_encoding_to_db(username, encoding)
-        #     else:
-        #         print("Fotograf Encodlanamadı")
-
-
-            # if image is not None:
-            #     faces = detect_faces(detector, image)
-            #     if faces is not None:
-            #         print(f"Faces detected: {faces}")
-            #         for face in faces:
-            #             x1, y1, x2, y2 = map(int, face[:4])
-            #             face_image = image[y1:y2, x1:x2]
-            #             print(f"Face Image Size : {face_image.size}")
-            #             if face_image.size > 0 : 
-            #                 face_image_rgb = cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)
-            #                 encoding = encode_faces(face_image_rgb)
-            #                 print(f"Encoding {encoding}")
-            #                 if encoding is not None:
-            #                     print("Encoding obtained.")
-            #                     print("Saving to database...")
-            #                     save_encoding_to_db(username, encoding)
-            #                 else:
-            #                     print("No encoding found.")
-            #             else:
-            #                 print("FACE IMAGE EMPTY")
-            #     else:
-            #         print("No faces detected.")
-            # else:
-            #     print(f"Failed to load image from {path}")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     login_page = LoginPage()
     login_page.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
